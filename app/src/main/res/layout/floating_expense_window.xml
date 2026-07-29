@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="320dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_floating_window"
+    android:padding="20dp"
+    android:elevation="8dp">
+
+    <!-- 标题：检测来源 -->
+    <TextView
+        android:id="@+id/tv_source"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="检测到付款"
+        android:textColor="#FF333333"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="12dp" />
+
+    <!-- 金额输入 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¥"
+            android:textColor="#FF4CAF50"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:paddingEnd="8dp" />
+
+        <EditText
+            android:id="@+id/et_amount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:inputType="numberDecimal"
+            android:textSize="28sp"
+            android:textColor="#FF333333"
+            android:textStyle="bold"
+            android:background="@android:color/transparent"
+            android:hint="0.00" />
+    </LinearLayout>
+
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="#FFE0E0E0"
+        android:layout_marginBottom="10dp" />
+
+    <!-- 收入/支出切换 -->
+    <ToggleButton
+        android:id="@+id/toggle_type"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:textOff="💸 支出"
+        android:textOn="💰 收入"
+        android:checked="false"
+        android:background="@drawable/bg_toggle"
+        android:textColor="#FFFFFFFF"
+        android:textSize="15sp"
+        android:layout_marginBottom="10dp" />
+
+    <!-- 分类选择 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="分类"
+            android:textColor="#FF757575"
+            android:textSize="14sp"
+            android:paddingEnd="12dp" />
+
+        <Spinner
+            android:id="@+id/spinner_category"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_spinner" />
+    </LinearLayout>
+
+    <!-- 备注 -->
+    <EditText
+        android:id="@+id/et_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="添加备注（可选）"
+        android:textColor="#FF333333"
+        android:textColorHint="#FFBDBDBD"
+        android:textSize="14sp"
+        android:background="@drawable/bg_input"
+        android:padding="10dp"
+        android:layout_marginBottom="14dp"
+        android:maxLines="2" />
+
+    <!-- 按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_dismiss"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="忽略"
+            android:textColor="#FF757575"
+            android:textSize="15sp"
+            android:background="@drawable/bg_btn_dismiss"
+            android:stateListAnimator="@null" />
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="✓ 记一笔"
+            android:textColor="#FFFFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_btn_save"
+            android:stateListAnimator="@null" />
+    </LinearLayout>
+
+</LinearLayout>

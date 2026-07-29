@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">智能记账</string>
+    <string name="accessibility_service_description">智能记账需要无障碍服务权限来检测付款页面，帮助您自动弹出记账窗口。我们不会收集或上传您的任何屏幕内容。</string>
+    <string name="enable_accessibility">开启无障碍服务</string>
+    <string name="accessibility_guide">请前往 设置 → 无障碍 → 已安装的应用 → 智能记账，开启服务即可自动检测付款页面。</string>
+    <string name="open_settings">打开无障碍设置</string>
+    <string name="record_expense">记一笔</string>
+    <string name="amount">金额</string>
+    <string name="category">分类</string>
+    <string name="note">备注</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="no_records">暂无记账记录</string>
+    <string name="today">今天</string>
+    <string name="this_month">本月</string>
+    <string name="total_expense">支出合计</string>
+    <string name="enable_overlay">开启悬浮窗权限</string>
+    <string name="overlay_guide">请允许智能记账在其他应用上层显示，这样才能弹出记账窗口。</string>
+    <string name="enable_auto_start">开启自启动</string>
+    <string name="auto_start_guide">建议允许自启动和后台运行，确保无障碍服务不会因省电策略被关闭。</string>
+    <string name="service_status">服务状态</string>
+    <string name="running">运行中</string>
+    <string name="stopped">已停止</string>
+    <string name="detected_from">检测到来自 %s 的付款</string>
+    <string name="quick_add">快速记账</string>
+    <string name="dismiss">忽略</string>
+    <string name="settings">设置</string>
+    <string name="statistics">统计</string>
+    <string name="history">记录</string>
+    <string name="all">全部</string>
+    <string name="category_food">餐饮</string>
+    <string name="category_transport">交通</string>
+    <string name="category_shopping">购物</string>
+    <string name="category_entertainment">娱乐</string>
+    <string name="category_housing">住房</string>
+    <string name="category_utilities">水电</string>
+    <string name="category_medical">医疗</string>
+    <string name="category_education">教育</string>
+    <string name="category_other">其他</string>
+    <string name="category_income">收入</string>
+</resources>
