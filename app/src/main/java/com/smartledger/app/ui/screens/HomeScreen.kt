@@ -1,7 +1,9 @@
 package com.smartledger.app.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -314,6 +316,7 @@ private fun CategoryStatsBar(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ExpenseCard(
     expense: ExpenseEntity,
@@ -324,7 +327,7 @@ private fun ExpenseCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 3.dp)
-            .clickable(onLongClick = onLongClick),
+            .combinedClickable(onClick = {}, onLongClick = { onLongClick() }),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {
@@ -397,6 +400,7 @@ private fun ExpenseCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualAddDialog(
     onDismiss: () -> Unit,
@@ -510,7 +514,7 @@ fun SettingsDialog(
                     onClick = {} // Android 弹出系统悬浮窗设置
                 )
 
-                HorizontalDivider(color = Divider)
+                Divider(color = Divider)
 
                 Text(
                     "隐私说明",
