@@ -15,14 +15,29 @@ interface ExpenseDao {
     @Query("SELECT * FROM expenses WHERE timestamp >= :startOfMonth AND timestamp < :endOfMonth ORDER BY timestamp DESC")
     fun getExpensesByMonth(startOfMonth: Long, endOfMonth: Long): Flow<List<ExpenseEntity>>
 
+    @Query("SELECT * FROM expenses WHERE timestamp >= :start AND timestamp < :end ORDER BY timestamp DESC")
+    fun getExpensesByRange(start: Long, end: Long): Flow<List<ExpenseEntity>>
+
     @Query("SELECT SUM(amount) FROM expenses WHERE type = 'expense' AND timestamp >= :start AND timestamp < :end")
     fun getTotalExpense(start: Long, end: Long): Flow<Long?>
 
     @Query("SELECT SUM(amount) FROM expenses WHERE type = 'income' AND timestamp >= :start AND timestamp < :end")
     fun getTotalIncome(start: Long, end: Long): Flow<Long?>
 
+    @Query("SELECT SUM(amount) FROM expenses WHERE type = 'expense'")
+    fun getAllTimeExpense(): Flow<Long?>
+
+    @Query("SELECT SUM(amount) FROM expenses WHERE type = 'income'")
+    fun getAllTimeIncome(): Flow<Long?>
+
     @Query("SELECT category, SUM(amount) as total FROM expenses WHERE type = 'expense' AND timestamp >= :start AND timestamp < :end GROUP BY category ORDER BY total DESC")
     fun getCategoryStats(start: Long, end: Long): Flow<List<CategoryTotal>>
+
+    @Query("SELECT category, SUM(amount) as total FROM expenses WHERE type = 'income' AND timestamp >= :start AND timestamp < :end GROUP BY category ORDER BY total DESC")
+    fun getIncomeCategoryStats(start: Long, end: Long): Flow<List<CategoryTotal>>
+
+    @Query("SELECT COUNT(*) FROM expenses WHERE type = 'expense' AND timestamp >= :start AND timestamp < :end")
+    fun getExpenseCount(start: Long, end: Long): Flow<Int?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(expense: ExpenseEntity): Long
