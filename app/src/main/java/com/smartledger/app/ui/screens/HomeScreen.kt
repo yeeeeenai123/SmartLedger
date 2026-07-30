@@ -37,6 +37,8 @@ fun HomeScreen(
     viewModel: MainViewModel,
     onStartAccessibility: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
+    onOpenBatterySettings: () -> Unit,
+    onTestPopup: () -> Unit,
     isOverlayPermissionGranted: Boolean,
     isAccessibilityEnabled: Boolean,
     onAddManualExpense: () -> Unit
@@ -78,7 +80,8 @@ fun HomeScreen(
                 monthIncome = viewModel.formatAmount(selectedMonthIncome),
                 expenseCount = selectedExpenseCount,
                 selectedMonth = selectedMonth,
-                onSettingsClick = { showSettingsDialog = true }
+                onSettingsClick = { showSettingsDialog = true },
+                onTestPopup = onTestPopup
             )
         }
 
@@ -188,6 +191,8 @@ fun HomeScreen(
             onDismiss = { showSettingsDialog = false },
             onEnableAccessibility = onStartAccessibility,
             onEnableOverlay = onOpenOverlaySettings,
+            onOpenBatterySettings = onOpenBatterySettings,
+            onTestPopup = onTestPopup,
             isOverlayPermissionGranted = isOverlayPermissionGranted,
             isAccessibilityEnabled = isAccessibilityEnabled
         )
@@ -289,7 +294,8 @@ private fun SummaryCard(
     monthIncome: String,
     expenseCount: Int,
     selectedMonth: Int,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onTestPopup: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -637,6 +643,8 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     onEnableAccessibility: () -> Unit,
     onEnableOverlay: () -> Unit,
+    onOpenBatterySettings: () -> Unit,
+    onTestPopup: () -> Unit,
     isOverlayPermissionGranted: Boolean,
     isAccessibilityEnabled: Boolean
 ) {
@@ -671,6 +679,32 @@ fun SettingsDialog(
 
                 Divider(color = Divider)
 
+                Text("⚠️ 国产手机必看", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Orange500)
+
+                SettingsItem(
+                    icon = "🔋",
+                    title = "关闭电池优化",
+                    subtitle = "防止系统杀死后台监控 (OPPO/vivo必做!)",
+                    onClick = onOpenBatterySettings,
+                    isDone = false,
+                    actionColor = Orange500
+                )
+
+                Divider(color = Divider)
+
+                Text("🧪 功能测试", fontWeight = FontWeight.Medium, fontSize = 14.sp)
+
+                SettingsItem(
+                    icon = "🧪",
+                    title = "测试弹窗",
+                    subtitle = "点击测试悬浮窗是否能正常弹出",
+                    onClick = onTestPopup,
+                    isDone = false,
+                    actionColor = SkyBlue
+                )
+
+                Divider(color = Divider)
+
                 Text("🔒 隐私说明", fontWeight = FontWeight.Medium, fontSize = 14.sp)
                 Text(
                     "本应用仅在本地处理屏幕内容，不会收集、上传或分享您的任何数据。所有记账记录仅存储在您的设备上。",
@@ -692,7 +726,8 @@ private fun SettingsItem(
     title: String,
     subtitle: String,
     onClick: () -> Unit,
-    isDone: Boolean
+    isDone: Boolean,
+    actionColor: Color = if (isDone) IncomeGreen else ExpenseRed
 ) {
     Row(
         modifier = Modifier
@@ -705,8 +740,14 @@ private fun SettingsItem(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, fontSize = 12.sp, color = if (isDone) IncomeGreen else ExpenseRed, lineHeight = 16.sp)
+            Text(subtitle, fontSize = 12.sp, color = actionColor, lineHeight = 16.sp)
         }
+        Icon(
+            Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
