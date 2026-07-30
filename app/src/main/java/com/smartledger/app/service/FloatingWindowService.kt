@@ -134,18 +134,6 @@ class FloatingWindowService : Service() {
         etAmount.setText(String.format("%.2f", amount))
         etAmount.setSelection(etAmount.text.length)
 
-        // 收入/支出切换按钮
-        toggleType.apply {
-            textOn = "💰 收入"
-            textOff = "💸 支出"
-            isChecked = selectedType == "income"
-            setOnCheckedChangeListener { _, isChecked ->
-                selectedType = if (isChecked) "income" else "expense"
-                tvSource.text = "检测到来自「${sourceApp}」的${if (isChecked) "收款" else "付款"}"
-                updateSpinner()
-            }
-        }
-
         // 分类选择器（包含收入分类）
         val expenseCategories = listOf(
             "餐饮", "交通", "购物", "娱乐", "住房",
@@ -169,6 +157,18 @@ class FloatingWindowService : Service() {
                 selectedCategory = cats[idx]
             } else {
                 selectedCategory = cats[0]
+            }
+        }
+
+        // 收入/支出切换按钮
+        toggleType.apply {
+            textOn = "💰 收入"
+            textOff = "💸 支出"
+            isChecked = selectedType == "income"
+            setOnCheckedChangeListener { _, isChecked ->
+                selectedType = if (isChecked) "income" else "expense"
+                tvSource.text = "检测到来自「${sourceApp}」的${if (isChecked) "收款" else "付款"}"
+                updateSpinner()
             }
         }
 
