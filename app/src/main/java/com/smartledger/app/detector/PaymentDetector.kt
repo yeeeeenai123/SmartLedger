@@ -1,5 +1,7 @@
 package com.smartledger.app.detector
 
+import android.util.Log
+
 /**
  * 付款检测结果
  */
@@ -136,10 +138,10 @@ object PaymentDetector {
     /**
      * 检测当前屏幕是否为支付成功 / 收款成功页面
      *
-     * 核心逻辑：
-     * 1. 优先检测「支付成功」类关键词 → 弹窗记支出
-     * 2. 检测「收款/到账」类关键词 → 弹窗记收入
-     * 3. 排除订单列表、设置等无关页面
+     * 核心逻辑（修复版）：
+     * 1. 先检测「支付成功/收款成功」关键词（最高优先级！）
+     * 2. 排除关键词只在没有成功关键词时才起作用
+     * 3. 防重已移到 Service 层，这里做最后防线
      */
     fun detect(screenText: String, packageName: String): PaymentDetection {
         val now = System.currentTimeMillis()
@@ -149,26 +151,22 @@ object PaymentDetector {
             return noDetection(packageName)
         }
 
-        // 防重：同一个包名+金额，5秒内不重复弹
-        if (packageName == lastDetectionPackage &&
-            now - lastDetectionTime < MIN_INTERVAL_MS
-        ) {
-            return noDetection(packageName)
-        }
-
-        // 排除无关页面
-        if (EXCLUDE_KEYWORDS.any { screenText.contains(it) }) {
-            return noDetection(packageName)
-        }
-
         // ═══════════════════════════════════════════════════
-        //  第1优先级：检测收款/收入成功（优先于支出检测）
+        //  第1优先级：检测收款/收入成功
         // ═══════════════════════════════════════════════════
         val isIncome = INCOME_SUCCESS_KEYWORDS.any { screenText.contains(it) }
         if (isIncome) {
+            // 确认不在排除页面（收款成功页面一般不会同时有排除词）
+            val hasExcludeWord = EXCLUDE_KEYWORDS.any { screenText.contains(it) }
+            if (hasExcludeWord) {
+                Log.d("PaymentDetector", "收款关键词命中但页面包含排除词，跳过")
+                return noDetection(packageName)
+            }
+
             val amount = extractAmount(screenText)
             val finalAmount = amount ?: 0.0
             updateCache(now, packageName, finalAmount)
+            Log.d("PaymentDetector", "✅ 收款成功！金额=$finalAmount, App=${getAppName(packageName)}")
             return PaymentDetection(
                 isPaymentPage = true,
                 amount = finalAmount,
@@ -182,12 +180,36 @@ object PaymentDetector {
 
         // ═══════════════════════════════════════════════════
         //  第2优先级：检测支付/付款成功（核心功能！）
+        //  重要：先检测成功关键词，再检查排除词
+        //  因为支付成功页经常也会提到「订单详情」等词
         // ═══════════════════════════════════════════════════
         val isPaymentSuccess = PAYMENT_SUCCESS_KEYWORDS.any { screenText.contains(it) }
         if (isPaymentSuccess) {
+            // 检查排除词 — 但只在成功关键词是「弱匹配」时排除
+            // 「支付成功」「付款成功」这种核心词命中时，忽略排除词
+            val isStrongMatch = listOf("支付成功", "付款成功", "交易成功", "支付完成")
+                .any { screenText.contains(it) }
+
+            if (!isStrongMatch) {
+                // 弱匹配（如「充值成功」「支付成功后」）才检查排除词
+                val hasExcludeWord = EXCLUDE_KEYWORDS.any { screenText.contains(it) }
+                if (hasExcludeWord) {
+                    Log.d("PaymentDetector", "弱匹配+排除词命中，跳过")
+                    return noDetection(packageName)
+                }
+            }
+
+            // 防重确认
+            if (packageName == lastDetectionPackage &&
+                now - lastDetectionTime < MIN_INTERVAL_MS) {
+                Log.d("PaymentDetector", "防重: 5秒内同一包名已检测过")
+                return noDetection(packageName)
+            }
+
             val amount = extractAmount(screenText)
-            val finalAmount = amount ?: 0.0
+            val finalAmount = if (amount != null && amount > 0.0) amount else 0.0
             updateCache(now, packageName, finalAmount)
+            Log.d("PaymentDetector", "✅ 支付成功！金额=$finalAmount, App=${getAppName(packageName)}")
             return PaymentDetection(
                 isPaymentPage = true,
                 amount = finalAmount,
