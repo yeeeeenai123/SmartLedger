@@ -32,6 +32,8 @@ import java.util.*
 fun HomeScreen(
     viewModel: MainViewModel,
     onStartAccessibility: () -> Unit,
+    onOpenOverlaySettings: () -> Unit,
+    isOverlayPermissionGranted: Boolean,
     onAddManualExpense: () -> Unit
 ) {
     val expenseGroups by viewModel.expenseGroups.collectAsState()
@@ -158,7 +160,9 @@ fun HomeScreen(
     if (showSettingsDialog) {
         SettingsDialog(
             onDismiss = { showSettingsDialog = false },
-            onEnableAccessibility = onStartAccessibility
+            onEnableAccessibility = onStartAccessibility,
+            onEnableOverlay = onOpenOverlaySettings,
+            isOverlayPermissionGranted = isOverlayPermissionGranted
         )
     }
 }
@@ -486,7 +490,9 @@ fun ManualAddDialog(
 @Composable
 fun SettingsDialog(
     onDismiss: () -> Unit,
-    onEnableAccessibility: () -> Unit
+    onEnableAccessibility: () -> Unit,
+    onEnableOverlay: () -> Unit,
+    isOverlayPermissionGranted: Boolean
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -510,8 +516,11 @@ fun SettingsDialog(
                 SettingsItem(
                     icon = Icons.Filled.OpenInNew,
                     title = "悬浮窗权限",
-                    subtitle = "允许在其他应用上层显示记账窗口",
-                    onClick = {} // Android 弹出系统悬浮窗设置
+                    subtitle = if (isOverlayPermissionGranted)
+                        "已开启 ✓"
+                    else
+                        "未开启！点击这里去开启（必须）",
+                    onClick = onEnableOverlay
                 )
 
                 Divider(color = Divider)
