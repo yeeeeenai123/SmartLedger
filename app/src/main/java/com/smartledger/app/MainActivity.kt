@@ -43,7 +43,12 @@ class MainActivity : ComponentActivity() {
                     error = Red500
                 )
             ) {
-                MainApp(viewModel = viewModel, onStartAccessibility = ::openAccessibilitySettings)
+                MainApp(
+                    viewModel = viewModel,
+                    onStartAccessibility = ::openAccessibilitySettings,
+                    onOpenOverlaySettings = ::openOverlaySettings,
+                    onAddManualExpense = {}
+                )
             }
         }
     }
@@ -82,7 +87,7 @@ class MainActivity : ComponentActivity() {
         startActivity(intent)
     }
 
-    private fun openOverlaySettings() {
+    fun openOverlaySettings() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -97,10 +102,81 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainApp(
     viewModel: MainViewModel,
-    onStartAccessibility: () -> Unit
+    onStartAccessibility: () -> Unit,
+    onOpenOverlaySettings: () -> Unit,
+    onAddManualExpense: () -> Unit
 ) {
     val selectedTab by viewModel.selectedTab.collectAsState()
     val isAccessibilityEnabled by viewModel.isAccessibilityEnabled.collectAsState()
+    val isOverlayPermissionGranted by viewModel.isOverlayPermissionGranted.collectAsState()
+
+    // 首次启动 / 权限未开启时的引导弹窗
+    var showPermissionGuide by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        // App 启动时检查，如果权限没开就弹引导
+        if (!isAccessibilityEnabled || !isOverlayPermissionGranted) {
+            showPermissionGuide = true
+        }
+    }
+
+    // 权限引导弹窗
+    if (showPermissionGuide && (!isAccessibilityEnabled || !isOverlayPermissionGranted)) {
+        AlertDialog(
+            onDismissRequest = { showPermissionGuide = false },
+            title = { Text("开启自动记账", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "自动弹窗记账需要开启以下两个权限，缺一不可：",
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    if (!isAccessibilityEnabled) {
+                        Text(
+                            "1. 无障碍服务 — 监控付款页面\n   点击下方「去开启无障碍」",
+                            fontSize = 13.sp,
+                            color = Red500,
+                            lineHeight = 20.sp
+                        )
+                    }
+                    if (!isOverlayPermissionGranted) {
+                        Text(
+                            "2. 悬浮窗权限 — 弹出记账窗口\n   点击下方「去开启悬浮窗」",
+                            fontSize = 13.sp,
+                            color = Red500,
+                            lineHeight = 20.sp
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "两个都开启后，付款时会自动弹出记账窗口。",
+                        fontSize = 12.sp,
+                        color = TextSecondary,
+                        lineHeight = 18.sp
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!isAccessibilityEnabled) {
+                        TextButton(onClick = onStartAccessibility) {
+                            Text("去开启无障碍", color = Green500)
+                        }
+                    }
+                    if (!isOverlayPermissionGranted) {
+                        TextButton(onClick = onOpenOverlaySettings) {
+                            Text("去开启悬浮窗", color = Green500)
+                        }
+                    }
+                    TextButton(onClick = { showPermissionGuide = false }) {
+                        Text("稍后")
+                    }
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -115,17 +191,17 @@ fun MainApp(
                     // 服务状态指示器
                     Surface(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                        color = if (isAccessibilityEnabled)
+                        color = if (isAccessibilityEnabled && isOverlayPermissionGranted)
                             Green500.copy(alpha = 0.15f)
                         else
                             Red500.copy(alpha = 0.15f),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text(
-                            if (isAccessibilityEnabled) " ● 监控中" else " ○ 未监控",
+                            if (isAccessibilityEnabled && isOverlayPermissionGranted) " ● 监控中" else " ○ 未监控",
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             fontSize = 12.sp,
-                            color = if (isAccessibilityEnabled) Green700 else Red500
+                            color = if (isAccessibilityEnabled && isOverlayPermissionGranted) Green700 else Red500
                         )
                     }
                 },
@@ -158,6 +234,8 @@ fun MainApp(
                 0 -> HomeScreen(
                     viewModel = viewModel,
                     onStartAccessibility = onStartAccessibility,
+                    onOpenOverlaySettings = onOpenOverlaySettings,
+                    isOverlayPermissionGranted = isOverlayPermissionGranted,
                     onAddManualExpense = {}
                 )
                 1 -> StatsScreen(viewModel = viewModel)
