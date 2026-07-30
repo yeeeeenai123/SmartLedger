@@ -236,6 +236,7 @@ fun MainApp(
                     onStartAccessibility = onStartAccessibility,
                     onOpenOverlaySettings = onOpenOverlaySettings,
                     isOverlayPermissionGranted = isOverlayPermissionGranted,
+                    isAccessibilityEnabled = isAccessibilityEnabled,
                     onAddManualExpense = {}
                 )
                 1 -> StatsScreen(viewModel = viewModel)
