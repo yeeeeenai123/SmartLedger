@@ -1,7 +1,7 @@
 package com.smartledger.app.detector
 
 /**
- * 付款页面检测结果
+ * 付款检测结果
  */
 data class PaymentDetection(
     val isPaymentPage: Boolean,
@@ -14,9 +14,9 @@ data class PaymentDetection(
 )
 
 /**
- * 付款页面检测引擎
+ * 付款检测引擎
  *
- * 通过无障碍服务获取的屏幕文本内容，识别是否为付款/收款页面，提取金额并自动分类。
+ * 核心逻辑：检测到「支付成功 / 付款成功 / 交易成功」后，自动弹出记账悬浮窗。
  * 覆盖：微信、支付宝、银行App、抖音、美团、京东、淘宝等
  */
 object PaymentDetector {
@@ -43,41 +43,41 @@ object PaymentDetector {
         "cn.gov.pbc.dcep" to "数字人民币"
     )
 
-    // ──── 付款页面关键词（高置信度） ────
-    private val PAYMENT_KEYWORDS_HIGH = listOf(
-        "确认支付", "立即支付", "确认付款", "付款确认",
-        "请输入支付密码", "支付密码", "指纹支付", "面容支付",
-        "刷脸支付", "验证支付密码", "Touch ID",
-        "确认交易", "交易确认"
+    // ═══════════════════════════════════════════════════
+    //  核心：支付成功关键词 — 检测到这些就弹窗！
+    // ═══════════════════════════════════════════════════
+    private val PAYMENT_SUCCESS_KEYWORDS = listOf(
+        "支付成功", "付款成功", "交易成功", "支付完成",
+        "支付成功!", "付款成功!", "交易成功!",
+        "充值成功", "交易完成", "支付完成!",
+        "支付成功页", "付款成功页",
+        "支付成功后", "交易成功后",
+        "支付成功，", "付款成功，",
+        "交易成功，", "支付完成，",
+        "支付成功！", "付款成功！", "交易成功！",
+        "Payment Successful", "Payment Success",
+        "支付成功(自动扣款)"
     )
 
-    // ──── 付款页面关键词（中等置信度） ────
-    private val PAYMENT_KEYWORDS_MEDIUM = listOf(
-        "支付", "付款", "收银台", "确认订单",
-        "提交订单", "去支付", "立即付款",
-        "应付金额", "实付金额", "合计金额",
-        "付款金额", "订单金额", "需付款",
-        "支付方式", "选择支付方式", "付款方式",
-        "微信支付", "支付宝支付", "银行卡支付", "云闪付",
-        "确认下单", "去结算", "结算"
-    )
-
-    // ──── 收款/收入关键词 ────
-    private val INCOME_KEYWORDS = listOf(
-        "收款", "转账给你", "向你转账", "已转账",
-        "收到转账", "到账", "已到账", "转账成功",
-        "对方已转账", "红包", "你领取了", "已存入",
+    // ──── 收款/收入关键词（检测到也弹窗，类型为收入） ────
+    private val INCOME_SUCCESS_KEYWORDS = listOf(
+        "收款成功", "已收款", "收款到账",
+        "转账给你", "向你转账", "已转账",
+        "收到转账", "已到账", "转账成功",
+        "对方已转账", "你领取了", "已存入",
         "转入成功", "充值到账", "工资到账", "退款到账",
-        "收款成功", "已收款"
+        "红包", "收款成功！"
     )
 
-    // ──── 非付款页面排除关键词 ────
+    // ──── 排除关键词（这些页面不弹窗） ────
+    // 注意：支付成功、付款成功、交易成功 不在这里！它们是触发词
     private val EXCLUDE_KEYWORDS = listOf(
-        "充值成功", "支付成功", "付款成功", "交易成功",
-        "订单详情", "已支付", "交易记录", "账单",
-        "支付记录", "已完成", "待发货", "已发货",
-        "退款", "售后", "申请退货", "交易关闭",
-        "订单列表", "支付设置", "免密支付设置"
+        "订单详情", "交易记录", "账单",
+        "支付记录", "订单列表", "支付设置",
+        "免密支付设置", "自动扣款设置",
+        "交易关闭", "交易失败", "支付失败",
+        "待发货", "已发货", "申请退货",
+        "退款详情", "售后", "退款处理中"
     )
 
     // ──── 自动分类规则：来源App → 默认分类 ────
@@ -86,50 +86,33 @@ object PaymentDetector {
         "com.jingdong.app.mall" to "购物",
         "com.taobao.taobao" to "购物",
         "com.ss.android.ugc.aweme" to "娱乐",
-        "com.tencent.mm" to "餐饮"       // 微信太难判断，默认餐饮
+        "com.tencent.mm" to "餐饮"
     )
 
     // ──── 自动分类规则：页面关键词 → 分类 ────
     private val KEYWORD_CATEGORY_MAP = mapOf(
-        // 餐饮
         "外卖" to "餐饮", "餐厅" to "餐饮", "饭店" to "餐饮",
         "美食" to "餐饮", "午餐" to "餐饮", "晚餐" to "餐饮",
         "早餐" to "餐饮", "咖啡" to "餐饮", "奶茶" to "餐饮",
         "小吃" to "餐饮", "买菜" to "餐饮", "超市" to "餐饮",
-
-        // 交通
         "打车" to "交通", "滴滴" to "交通", "地铁" to "交通",
         "公交" to "交通", "火车" to "交通", "高铁" to "交通",
         "机票" to "交通", "加油" to "交通", "停车" to "交通",
         "骑行" to "交通", "单车" to "交通",
-
-        // 购物
         "下单" to "购物", "商品" to "购物", "订单" to "购物",
         "购买" to "购物", "购物车" to "购物", "快递" to "购物",
         "包邮" to "购物", "天猫" to "购物",
-
-        // 娱乐
         "电影" to "娱乐", "演出" to "娱乐", "KTV" to "娱乐",
         "景区" to "娱乐", "门票" to "娱乐", "酒店" to "娱乐",
         "旅行" to "娱乐", "游戏" to "娱乐",
-
-        // 住房
         "房租" to "住房", "物业" to "住房", "房贷" to "住房",
         "租房" to "住房",
-
-        // 水电
         "电费" to "水电", "水费" to "水电", "燃气" to "水电",
         "话费" to "水电", "宽带" to "水电", "网费" to "水电",
-
-        // 医疗
         "医院" to "医疗", "药" to "医疗", "挂号" to "医疗",
         "门诊" to "医疗", "体检" to "医疗",
-
-        // 教育
         "学费" to "教育", "课程" to "教育", "培训" to "教育",
         "学习" to "教育", "考试" to "教育",
-
-        // 转账/银行
         "转账" to "转账", "汇款" to "转账", "提现" to "转账"
     )
 
@@ -138,94 +121,82 @@ object PaymentDetector {
         Regex("""[¥￥]\s*(\d+\.?\d{0,2})"""),
         Regex("""(\d+\.?\d{0,2})\s*元"""),
         Regex("""[¥￥]\s*([\d,]+\.?\d{0,2})"""),
-        Regex("""(?:应付|实付|合计|订单|付款|支付|收款|到账|收入)\s*(?:金额|总价|价格|总计)?\s*[:：]?\s*[¥￥]?\s*(\d+\.?\d{0,2})"""),
+        Regex("""(?:应付|实付|合计|订单|付款|支付|收款|到账|收入|金额|总计|实付金额)\s*[:：]?\s*[¥￥]?\s*(\d+\.?\d{0,2})"""),
         Regex("""[-−]\s*[¥￥]?\s*(\d+\.?\d{0,2})"""),
         Regex("""需支付\s*[¥￥]?\s*(\d+\.?\d{0,2})"""),
         Regex("""(\d+\.?\d{0,2})\s*元?\s*(?:已)?(?:到账|存入|入账)""")
     )
 
-    // 上次检测结果缓存
+    // 上次检测结果缓存 — 防止同一个成功页面反复弹窗
     private var lastDetectionTime = 0L
     private var lastDetectionPackage = ""
-    private val MIN_INTERVAL_MS = 3000L
+    private var lastDetectedAmount = 0.0
+    private val MIN_INTERVAL_MS = 5000L // 同一个成功页面5秒内不重复弹窗
 
     /**
-     * 检测当前屏幕是否为付款/收款页面
+     * 检测当前屏幕是否为支付成功 / 收款成功页面
+     *
+     * 核心逻辑：
+     * 1. 优先检测「支付成功」类关键词 → 弹窗记支出
+     * 2. 检测「收款/到账」类关键词 → 弹窗记收入
+     * 3. 排除订单列表、设置等无关页面
      */
     fun detect(screenText: String, packageName: String): PaymentDetection {
         val now = System.currentTimeMillis()
 
-        // 去重
+        // 忽略自己的App
+        if (packageName == "com.smartledger.app") {
+            return noDetection(packageName)
+        }
+
+        // 防重：同一个包名+金额，5秒内不重复弹
         if (packageName == lastDetectionPackage &&
             now - lastDetectionTime < MIN_INTERVAL_MS
         ) {
             return noDetection(packageName)
         }
 
-        if (packageName == "com.smartledger.app") {
-            return noDetection(packageName)
-        }
-
-        // 排除非付款页面
+        // 排除无关页面
         if (EXCLUDE_KEYWORDS.any { screenText.contains(it) }) {
             return noDetection(packageName)
         }
 
-        // ── 先判断是支出还是收入 ──
-        val isIncome = INCOME_KEYWORDS.any { screenText.contains(it) }
-        val type = if (isIncome) "income" else "expense"
-
-        // 高置信度检测
-        val highConfidenceMatch = PAYMENT_KEYWORDS_HIGH.any { screenText.contains(it) }
-        if (highConfidenceMatch || isIncome) {
+        // ═══════════════════════════════════════════════════
+        //  第1优先级：检测收款/收入成功（优先于支出检测）
+        // ═══════════════════════════════════════════════════
+        val isIncome = INCOME_SUCCESS_KEYWORDS.any { screenText.contains(it) }
+        if (isIncome) {
             val amount = extractAmount(screenText)
-            if (amount != null) {
-                updateCache(now, packageName)
-                return PaymentDetection(
-                    isPaymentPage = true,
-                    amount = amount,
-                    sourceApp = getAppName(packageName),
-                    sourcePackage = packageName,
-                    confidence = if (isIncome) 0.9f else 0.95f,
-                    suggestedCategory = suggestCategory(packageName, screenText, isIncome),
-                    suggestedType = type
-                )
-            }
+            val finalAmount = amount ?: 0.0
+            updateCache(now, packageName, finalAmount)
+            return PaymentDetection(
+                isPaymentPage = true,
+                amount = finalAmount,
+                sourceApp = getAppName(packageName),
+                sourcePackage = packageName,
+                confidence = 0.95f,
+                suggestedCategory = suggestCategory(packageName, screenText, isIncome = true),
+                suggestedType = "income"
+            )
         }
 
-        // 中等置信度
-        val mediumMatches = PAYMENT_KEYWORDS_MEDIUM.count { screenText.contains(it) }
-        if (mediumMatches >= 2) {
+        // ═══════════════════════════════════════════════════
+        //  第2优先级：检测支付/付款成功（核心功能！）
+        // ═══════════════════════════════════════════════════
+        val isPaymentSuccess = PAYMENT_SUCCESS_KEYWORDS.any { screenText.contains(it) }
+        if (isPaymentSuccess) {
             val amount = extractAmount(screenText)
-            if (amount != null) {
-                updateCache(now, packageName)
-                return PaymentDetection(
-                    isPaymentPage = true,
-                    amount = amount,
-                    sourceApp = getAppName(packageName),
-                    sourcePackage = packageName,
-                    confidence = 0.8f,
-                    suggestedCategory = suggestCategory(packageName, screenText, isIncome),
-                    suggestedType = type
-                )
-            }
-        }
-
-        // 低置信度
-        if (mediumMatches >= 1) {
-            val amount = extractAmount(screenText)
-            if (amount != null && amount > 0) {
-                updateCache(now, packageName)
-                return PaymentDetection(
-                    isPaymentPage = true,
-                    amount = amount,
-                    sourceApp = getAppName(packageName),
-                    sourcePackage = packageName,
-                    confidence = 0.6f,
-                    suggestedCategory = suggestCategory(packageName, screenText, isIncome),
-                    suggestedType = type
-                )
-            }
+            val finalAmount = amount ?: 0.0
+            updateCache(now, packageName, finalAmount)
+            return PaymentDetection(
+                isPaymentPage = true,
+                amount = finalAmount,
+                sourceApp = getAppName(packageName),
+                sourcePackage = packageName,
+                confidence = 0.95f,
+                suggestedCategory = suggestCategory(packageName, screenText, isIncome = false),
+                suggestedType = "expense"
+            )
         }
 
         return noDetection(packageName)
@@ -235,7 +206,17 @@ object PaymentDetector {
      * 自动分类：根据来源App + 页面关键词智能判断
      */
     fun suggestCategory(packageName: String, screenText: String, isIncome: Boolean): String {
-        if (isIncome) return "收入"
+        if (isIncome) {
+            // 收入场景细分
+            return when {
+                screenText.contains("工资") || screenText.contains("薪水") -> "工资"
+                screenText.contains("红包") -> "红包"
+                screenText.contains("退款") -> "退款"
+                screenText.contains("理财") || screenText.contains("利息") -> "理财"
+                screenText.contains("报销") -> "报销"
+                else -> "其他收入"
+            }
+        }
 
         // 1. 先检查页面关键词（优先级最高）
         for ((keyword, category) in KEYWORD_CATEGORY_MAP) {
@@ -250,7 +231,7 @@ object PaymentDetector {
             return "转账"
         }
 
-        // 4. 支付宝特殊处理（看有没有外卖、电影等关键词）
+        // 4. 支付宝特殊处理
         if (packageName == "com.eg.android.AlipayGphone") {
             return "购物"
         }
@@ -301,13 +282,15 @@ object PaymentDetector {
         suggestedType = "expense"
     )
 
-    private fun updateCache(time: Long, pkg: String) {
+    private fun updateCache(time: Long, pkg: String, amount: Double) {
         lastDetectionTime = time
         lastDetectionPackage = pkg
+        lastDetectedAmount = amount
     }
 
     fun resetCache() {
         lastDetectionTime = 0L
         lastDetectionPackage = ""
+        lastDetectedAmount = 0.0
     }
 }
