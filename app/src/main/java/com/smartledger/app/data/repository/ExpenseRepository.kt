@@ -17,14 +17,27 @@ class ExpenseRepository {
     fun getExpensesByMonth(start: Long, end: Long): Flow<List<ExpenseEntity>> =
         dao.getExpensesByMonth(start, end)
 
+    fun getExpensesByRange(start: Long, end: Long): Flow<List<ExpenseEntity>> =
+        dao.getExpensesByRange(start, end)
+
     fun getTotalExpense(start: Long, end: Long): Flow<Long?> =
         dao.getTotalExpense(start, end)
 
     fun getTotalIncome(start: Long, end: Long): Flow<Long?> =
         dao.getTotalIncome(start, end)
 
+    fun getAllTimeExpense(): Flow<Long?> = dao.getAllTimeExpense()
+
+    fun getAllTimeIncome(): Flow<Long?> = dao.getAllTimeIncome()
+
     fun getCategoryStats(start: Long, end: Long) =
         dao.getCategoryStats(start, end)
+
+    fun getIncomeCategoryStats(start: Long, end: Long) =
+        dao.getIncomeCategoryStats(start, end)
+
+    fun getExpenseCount(start: Long, end: Long): Flow<Int?> =
+        dao.getExpenseCount(start, end)
 
     suspend fun insert(expense: ExpenseEntity): Long = dao.insert(expense)
 
