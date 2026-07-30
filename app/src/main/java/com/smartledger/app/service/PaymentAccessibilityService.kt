@@ -3,9 +3,13 @@ package com.smartledger.app.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
 import com.smartledger.app.detector.PaymentDetector
 
 /**
@@ -20,6 +24,7 @@ class PaymentAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         isServiceEnabled = true
+        isRunning = true
         Log.d(TAG, "无障碍服务已连接")
 
         val info = AccessibilityServiceInfo().apply {
@@ -56,11 +61,20 @@ class PaymentAccessibilityService : AccessibilityService() {
 
             if (screenText.isBlank()) return
 
+            Log.d(TAG, "扫描包名: $packageName, 文本长度: ${screenText.length}")
+
             // 检测是否为付款页面
             val detection = PaymentDetector.detect(screenText, packageName)
 
             if (detection.isPaymentPage) {
-                Log.d(TAG, "检测到付款页面: ${detection.sourceApp}, 金额: ${detection.amount}")
+                Log.d(TAG, "✅ 检测到付款页面: ${detection.sourceApp}, 金额: ${detection.amount}, 分类: ${detection.suggestedCategory}")
+
+                // 检查悬浮窗权限
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                    Log.w(TAG, "悬浮窗权限未开启，无法弹出记账窗口！")
+                    Toast.makeText(this, "请先开启悬浮窗权限才能自动记账", Toast.LENGTH_LONG).show()
+                    return
+                }
 
                 // 启动悬浮窗
                 showFloatingWindow(detection)
@@ -114,7 +128,12 @@ class PaymentAccessibilityService : AccessibilityService() {
             putExtra(FloatingWindowService.EXTRA_CATEGORY, detection.suggestedCategory)
             putExtra(FloatingWindowService.EXTRA_TYPE, detection.suggestedType)
         }
-        startService(intent)
+        // Android 8+ 需要用 startForegroundService 启动前台服务
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 
     override fun onInterrupt() {
@@ -124,6 +143,7 @@ class PaymentAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         isServiceEnabled = false
+        isRunning = false
         Log.d(TAG, "无障碍服务已销毁")
     }
 
