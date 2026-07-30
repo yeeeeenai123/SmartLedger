@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.*
@@ -69,44 +70,50 @@ class FloatingWindowService : Service() {
 
         val amount = detectedAmount ?: return
 
-        floatingView = LayoutInflater.from(this).inflate(
-            R.layout.floating_expense_window, null
-        )
+        try {
+            floatingView = LayoutInflater.from(this).inflate(
+                R.layout.floating_expense_window, null
+            )
 
-        val windowType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
+            val windowType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
+
+            layoutParams = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                windowType,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                y = 120
+            }
+
+            setupFloatingUI(amount)
+
+            floatingView?.apply {
+                alpha = 0f
+                translationY = -100f
+                animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(300)
+                    .setInterpolator(AccelerateDecelerateInterpolator())
+                    .start()
+            }
+
+            windowManager.addView(floatingView, layoutParams)
+            Log.d(TAG, "悬浮窗已显示")
+        } catch (e: Exception) {
+            Log.e(TAG, "显示悬浮窗失败", e)
+            hideFloatingWindow()
         }
-
-        layoutParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            windowType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = 120
-        }
-
-        setupFloatingUI(amount)
-
-        floatingView?.apply {
-            alpha = 0f
-            translationY = -100f
-            animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(300)
-                .setInterpolator(AccelerateDecelerateInterpolator())
-                .start()
-        }
-
-        windowManager.addView(floatingView, layoutParams)
     }
 
     private fun setupFloatingUI(amount: Double) {
@@ -135,6 +142,7 @@ class FloatingWindowService : Service() {
             setOnCheckedChangeListener { _, isChecked ->
                 selectedType = if (isChecked) "income" else "expense"
                 tvSource.text = "检测到来自「${sourceApp}」的${if (isChecked) "收款" else "付款"}"
+                updateSpinner()
             }
         }
 
@@ -172,13 +180,6 @@ class FloatingWindowService : Service() {
         }
 
         updateSpinner()
-
-        // 收入/支出切换时更新分类列表
-        toggleType.setOnCheckedChangeListener { _, isChecked ->
-            selectedType = if (isChecked) "income" else "expense"
-            tvSource.text = "检测到来自「${sourceApp}」的${if (isChecked) "收款" else "付款"}"
-            updateSpinner()
-        }
 
         // 保存按钮
         btnSave.setOnClickListener {
@@ -268,6 +269,7 @@ class FloatingWindowService : Service() {
     }
 
     companion object {
+        private const val TAG = "FloatingWindow"
         const val ACTION_SHOW = "com.smartledger.SHOW_FLOATING"
         const val ACTION_HIDE = "com.smartledger.HIDE_FLOATING"
         const val EXTRA_AMOUNT = "amount"
